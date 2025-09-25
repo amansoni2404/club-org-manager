@@ -1,9 +1,9 @@
 type PageProps = {
-  params: { clubId: string };
+  params: Promise<{ clubId: string }>;
 };
 
-export default function ClubDashboardPage({ params }: PageProps) {
-  const { clubId } = params;
+export default async function ClubDashboardPage({ params }: PageProps) {
+  const { clubId } = await params;
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Club {clubId}</h1>
