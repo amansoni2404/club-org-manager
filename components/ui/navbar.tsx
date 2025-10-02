@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+import { signout } from "@/app/dashboard/actions";
 // Simple logo component for the navbar
 const Logo = (props: React.SVGAttributes<SVGElement>) => {
   return (
@@ -98,7 +100,6 @@ export interface Navbar01Props extends React.HTMLAttributes<HTMLElement> {
 // Default navigation links
 const defaultNavigationLinks: Navbar01NavLink[] = [
   { href: "/", label: "Home", active: true },
-  { href: "/auth", label: "Login" },
   { href: "/faq", label: "FAQ" },
   { href: "/features", label: "Features" },
 ];
@@ -120,8 +121,23 @@ export const Navbar = React.forwardRef<HTMLElement, Navbar01Props>(
     ref
   ) => {
     const [isMobile, setIsMobile] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const containerRef = useRef<HTMLElement>(null);
     useEffect(() => {
+      setMounted(true);
+
+      // Check authentication status
+      const checkAuth = async () => {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setIsLoggedIn(!!user);
+      };
+
+      checkAuth();
+
       const checkWidth = () => {
         if (containerRef.current) {
           const width = containerRef.current.offsetWidth;
@@ -236,27 +252,40 @@ export const Navbar = React.forwardRef<HTMLElement, Navbar01Props>(
           </div>
           {/* Right side */}
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-              onClick={(e) => {
-                e.preventDefault();
-                if (onSignInClick) onSignInClick();
-              }}
-            >
-              {signInText}
-            </Button>
-            <Button
-              size="sm"
-              className="text-sm font-medium px-4 h-9 rounded-md shadow-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                if (onCtaClick) onCtaClick();
-              }}
-            >
-              {ctaText}
-            </Button>
+            {mounted && (
+              <>
+                {isLoggedIn ? (
+                  <form action={signout}>
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="sm"
+                      className="text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    >
+                      Sign Out
+                    </Button>
+                  </form>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    asChild
+                  >
+                    <Link href="/login">{signInText}</Link>
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="text-sm font-medium px-4 h-9 rounded-md shadow-sm"
+                  asChild
+                >
+                  <Link href={isLoggedIn ? "/dashboard" : "/login"}>
+                    {ctaText}
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
